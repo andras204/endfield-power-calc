@@ -1,0 +1,51 @@
+name: Build for Linux & Windows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl   # Linux (static)
+          - x86_64-pc-windows-gnu        # Windows (MSVC)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            musl-tools \
+            gcc-mingw-w64-x86-64
+
+      - name: Build binary
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Archive binary
+        run: |
+          mkdir -p artifacts
+          if [[ "${{ matrix.target }}" == "x86_64-pc-windows-gnu" ]]; then
+            mv target/${{ matrix.target }}/release/*.exe artifacts/
+          else
+            mv target/${{ matrix.target }}/release/* artifacts/
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}
+          path: artifacts/
