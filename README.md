@@ -5,7 +5,7 @@ Stop wasting batteries!
 This tool calculates the optimal splitter chain (divider stack) that will minimize your battery usage while still keeping the lights on, and your factory running.
 
 example output:
-![output example](https://raw.githubusercontent.com/andras204/endfield-power-calc/refs/heads/master/assets/output_example.png)
+![output example](https://raw.githubusercontent.com/andras204/endfield-power-calc/refs/heads/master/assets/usage.gif)
 
 build based on example output:
 ![build example](https://raw.githubusercontent.com/andras204/endfield-power-calc/refs/heads/master/assets/build_example.png)
