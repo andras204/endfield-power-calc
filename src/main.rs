@@ -53,7 +53,8 @@ fn main() {
     #[cfg(target_os = "windows")]
     let _ = {
         let mut buf = String::new();
-        std::io::stdin().read_line(&mut buf).unwrap()
+        let bytes_read = std::io::stdin().read_line(&mut buf).unwrap();
+        println!("{bytes_read}")
     };
 }
 
