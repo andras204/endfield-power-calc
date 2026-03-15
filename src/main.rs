@@ -48,6 +48,13 @@ fn main() {
 
     output::print_build(full_tbs, &div_stack);
     output::print_stats(power_draw, battery_power, full_tbs, &div_stack);
+
+    // final readline to keep console open on windows
+    #[cfg(target_os = "windows")]
+    let _ = {
+        let mut buf = String::new();
+        std::io::stdin().read_line(&mut buf).unwrap()
+    };
 }
 
 fn calc_divider_stack(ideal_battery_feed_interval: f64) -> Option<Vec<i32>> {
