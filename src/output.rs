@@ -85,11 +85,13 @@ pub fn print_stats(
             ),
         ]);
     } else {
+        let efficiency = if power_draw == 0f64 {
+            100f64
+        } else {
+            100f64 * (power_draw / battery_power)
+        };
         stats.extend_from_slice(&[
-            format!(
-                "├─efficiency: {G}{:.2}%{R}",
-                100f64 * (power_draw / battery_power)
-            ),
+            format!("├─efficiency: {G}{:.2}%{R}", efficiency),
             format!(
                 "└─total battery consumption: {Y}{:.1}{D}/m{R}",
                 full_tbs * TB_FEED_RATE
@@ -101,9 +103,10 @@ pub fn print_stats(
 
 fn print_with_box(lines: &[String], title: &str) {
     let mut header = "╭".to_string();
-    header.push_str(&"─".repeat(32));
+    header.push_str(&"─".repeat(36));
+    header.push_str(&"┐");
     header.push_str(title);
-    header.push_str("─┄┈");
+    header.push_str("┌─┄┈");
     println!("{}", header);
     for s in lines {
         println!("{}", s);

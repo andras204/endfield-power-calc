@@ -17,6 +17,45 @@ const BATTERIES: [(&str, f64); 5] = [
     ("SC Wuling battery (3200)", 3200f64),
 ];
 
+#[cfg(target_os = "windows")]
+fn main() {
+    loop {
+        let (mut power_draw, battery_power) = input();
+
+        if power_draw < PAC_POWER_OUTPUT {
+            println!("The PAC generates enough power...");
+            std::process::exit(0);
+        }
+
+        power_draw -= PAC_POWER_OUTPUT;
+
+        let mut full_tbs = (power_draw / battery_power).floor();
+
+        power_draw -= full_tbs * battery_power;
+
+        // don't let the total charge delta over a cyle go negative
+        let charge_rate = battery_power - power_draw;
+        let total_charge = charge_rate * TB_PROCESS_TIME;
+        let max_discharge_time = (total_charge / power_draw) + TB_PROCESS_TIME;
+
+        // don't let the PAC discharge completely
+        let drain_time = PAC_POWER_RESERVE / power_draw;
+        let ideal_battery_feed_interval = drain_time + TB_PROCESS_TIME;
+
+        let min_feed_interval = f64::min(max_discharge_time, ideal_battery_feed_interval);
+
+        let div_stack = calc_divider_stack(min_feed_interval);
+
+        if div_stack.is_none() && min_feed_interval != f64::INFINITY {
+            full_tbs += 1f64;
+        }
+
+        output::print_build(full_tbs, &div_stack);
+        output::print_stats(power_draw, battery_power, full_tbs, &div_stack);
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
 fn main() {
     let (mut power_draw, battery_power) = input();
 
@@ -40,25 +79,23 @@ fn main() {
     let drain_time = PAC_POWER_RESERVE / power_draw;
     let ideal_battery_feed_interval = drain_time + TB_PROCESS_TIME;
 
-    let div_stack = calc_divider_stack(f64::min(max_discharge_time, ideal_battery_feed_interval));
+    let min_feed_interval = f64::min(max_discharge_time, ideal_battery_feed_interval);
 
-    if div_stack.is_none() {
+    let div_stack = calc_divider_stack(min_feed_interval);
+
+    if div_stack.is_none() && min_feed_interval != f64::INFINITY {
         full_tbs += 1f64;
     }
 
     output::print_build(full_tbs, &div_stack);
     output::print_stats(power_draw, battery_power, full_tbs, &div_stack);
-
-    // final readline to keep console open on windows
-    #[cfg(target_os = "windows")]
-    let _ = {
-        let mut buf = String::new();
-        let bytes_read = std::io::stdin().read_line(&mut buf).unwrap();
-        println!("{bytes_read}")
-    };
 }
 
 fn calc_divider_stack(ideal_battery_feed_interval: f64) -> Option<Vec<i32>> {
+    if ideal_battery_feed_interval == f64::INFINITY {
+        return None;
+    }
+
     let stack_max = ideal_battery_feed_interval.log2().ceil() as usize;
     let stack_min = ideal_battery_feed_interval.log(3f64).floor() as usize;
 
